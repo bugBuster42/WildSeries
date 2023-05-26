@@ -91,7 +91,7 @@ class ProgramFixtures extends Fixture implements DependentFixtureInterface
             ],
         ];
 
-        foreach ($programs as $program) {
+        foreach ($programs as $key => $program) {
             $newProgram = new Program();
             $newProgram->setTitle($program['title']);
             $newProgram->setSynopsis($program['synopsis']);
@@ -99,7 +99,7 @@ class ProgramFixtures extends Fixture implements DependentFixtureInterface
             $newProgram->setYear($program['year']);
             $newProgram->setCategory($this->getReference($program['category']));
             $manager->persist($newProgram);
-            $this->addReference('program_' . $program['title'], $newProgram);
+            $this->addReference('program_' . $key, $newProgram);
         }
 
         $manager->flush();
