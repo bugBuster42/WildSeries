@@ -12,3 +12,6 @@ import './styles/app.scss';
 import 'popper.js';
 import './bootstrap';
 
+require('bootstrap');
+
+
