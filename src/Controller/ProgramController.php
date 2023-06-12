@@ -88,4 +88,42 @@ class ProgramController extends AbstractController
 
         ]);
     }
+
+    #[Route('/{id}/edit', name: 'edit', methods: ['GET', 'POST'])]
+    public function edit(Request $request, Program $program, ProgramRepository $programRepository): Response
+    {
+        $form = $this->createForm(ProgramType::class, $program);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $programRepository->save($program, true);
+
+            $this->addFlash(
+                'success',
+                'La série a bien été modifiée ;)'
+            );
+
+            return $this->redirectToRoute('program_show', ['id' => $program->getId()]);
+        }
+
+        return $this->renderForm('program/edit.html.twig', [
+            'program' => $program,
+            'form' => $form,
+        ]);
+    }
+
+    #[Route('/delete/{id}', name: 'delete', methods: ['POST'])]
+    public function delete(Request $request, Program $program, ProgramRepository $programRepository): Response
+    {
+        if ($this->isCsrfTokenValid('delete' . $program->getId(), $request->request->get('_token'))) {
+            $programRepository->remove($program, true);
+
+            $this->addFlash(
+                'success',
+                'La série a bien été supprimée ;)'
+            );
+        }
+
+        return $this->redirectToRoute('program_index');
+    }
 }
