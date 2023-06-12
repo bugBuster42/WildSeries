@@ -37,14 +37,17 @@ class ProgramController extends AbstractController
         $form = $this->createForm(ProgramType::class, $program);
         // Get data from HTTP request
         $form->handleRequest($request);
-        // Was the form submitted ?
-        if ($form->isSubmitted()) {
+        if ($form->isSubmitted() && $form->isValid()) {
             $programRepository->save($program, true);
-            // Deal with the submitted data
-            // For example : persiste & flush the entity
-            // And redirect to a route that display the result
+
+            $this->addFlash(
+                'success',
+                'La nouvelle série a bien été ajouté ;)'
+            );
+            return $this->redirectToRoute('program_index');
         }
-        return $this->render('program/new.html.twig', [
+        return $this->renderForm('program/new.html.twig', [
+            'program' => $program,
             'form' => $form,
         ]);
     }
