@@ -6,12 +6,15 @@ use App\Entity\Season;
 use App\Entity\Episode;
 use App\Entity\Program;
 use App\Form\ProgramType;
+use App\Service\ProgramDuration;
 use Doctrine\ORM\Mapping\Entity;
 use App\Repository\SeasonRepository;
+use App\Repository\EpisodeRepository;
 use App\Repository\ProgramRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
 #[Route('/program', name: 'program_')]
@@ -29,15 +32,17 @@ class ProgramController extends AbstractController
     }
 
     #[Route('/new', name: 'new')]
-    public function new(Request $request, ProgramRepository $programRepository): Response
+    public function new(Request $request, ProgramRepository $programRepository, SluggerInterface $slugger): Response
     {
-        $program = new Program();
 
+        $program = new Program();
         // Create the form, linked with $category
         $form = $this->createForm(ProgramType::class, $program);
         // Get data from HTTP request
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
+            $slug = $slugger->slug($program->getTitle());
+            $program->setSlug($slug);
             $programRepository->save($program, true);
 
             $this->addFlash(
@@ -54,12 +59,13 @@ class ProgramController extends AbstractController
 
 
 
-    #[Route('/show/{id<^[0-9]+$>}', name: 'show')]
-    public function show(Program $program): Response
+    #[Route('/show/{slug}', name: 'show')]
+    public function show(Program $program, ProgramDuration $programDuration): Response
     {
 
         return $this->render('program/show.html.twig', [
             'program' => $program,
+            'programDuration' => $programDuration->calculate($program)
         ]);
     }
 
@@ -89,7 +95,7 @@ class ProgramController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'edit', methods: ['GET', 'POST'])]
+    #[Route('/{slug}/edit', name: 'edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Program $program, ProgramRepository $programRepository): Response
     {
         $form = $this->createForm(ProgramType::class, $program);
@@ -103,7 +109,7 @@ class ProgramController extends AbstractController
                 'La série a bien été modifiée ;)'
             );
 
-            return $this->redirectToRoute('program_show', ['id' => $program->getId()]);
+            return $this->redirectToRoute('program_show', ['slug' => $program->getSlug()]);
         }
 
         return $this->renderForm('program/edit.html.twig', [
@@ -112,10 +118,19 @@ class ProgramController extends AbstractController
         ]);
     }
 
-    #[Route('/delete/{id}', name: 'delete', methods: ['POST'])]
-    public function delete(Request $request, Program $program, ProgramRepository $programRepository): Response
+    #[Route('/delete/{slug}', name: 'delete', methods: ['POST'])]
+    public function delete(Request $request, Program $program, ProgramRepository $programRepository, SeasonRepository $seasonRepository, EpisodeRepository $episodeRepository): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $program->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $program->getSlug(), $request->request->get('_token'))) {
+            $seasons = $program->getSeasons();
+            foreach ($seasons as $season) {
+                $episodes = $season->getEpisodes();
+                foreach ($episodes as $episode) {
+                    $episodeRepository->remove($episode, true);
+                }
+                $seasonRepository->remove($season, true);
+            }
+
             $programRepository->remove($program, true);
 
             $this->addFlash(

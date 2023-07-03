@@ -3,14 +3,22 @@
 namespace App\DataFixtures;
 
 use App\Entity\Program;
-use Doctrine\Bundle\FixturesBundle\Fixture;
-use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
+use Doctrine\Bundle\FixturesBundle\Fixture;
+use Symfony\Component\String\Slugger\SluggerInterface;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 
 class ProgramFixtures extends Fixture implements DependentFixtureInterface
 {
+    private SluggerInterface $slugger;
+
+    public function __construct(SluggerInterface $slugger)
+    {
+        $this->slugger = $slugger;
+    }
     public function load(ObjectManager $manager)
     {
+
         $programs = [
             [
                 'title' => 'Walking Dead',
@@ -93,7 +101,9 @@ class ProgramFixtures extends Fixture implements DependentFixtureInterface
 
         foreach ($programs as $key => $program) {
             $newProgram = new Program();
+            $slug = $this->slugger->slug($program['title']);
             $newProgram->setTitle($program['title']);
+            $newProgram->setSlug($slug);
             $newProgram->setSynopsis($program['synopsis']);
             $newProgram->setCountry($program['country']);
             $newProgram->setYear($program['year']);
