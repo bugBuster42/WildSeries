@@ -16,6 +16,9 @@
 				{{ program.year }}</p>
 			<p>Catégorie :
 				{{ program.category.name }}</p>
+			<p>Temps de visionnage pour la série:
+				{{ programDuration }}
+			</p>
 			<h3>Saisons disponibles :</h3>
 			<ul>
 				{% for season in program.seasons %}
